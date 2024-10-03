@@ -145,13 +145,14 @@ const RoomPage: NextPage = () => {
 
     const messageId = uuidv4();  // Criar um ID único para a mensagem
     const newMessage: CompartmentMessage = {
-      id: messageId,
-      content: isStranger ? strangerMessage : clientMessage,
-      room: room as string,
-      stranger: isStranger,
-      sender: isStranger ? 'stranger' : 'client',
-      distortion: isDistortionEnabled  // Adiciona a distorção como uma propriedade
-    };
+  id: messageId,
+  message: isStranger ? strangerMessage : clientMessage,  // Atribua o mesmo valor de content a message
+  content: isStranger ? strangerMessage : clientMessage,  // Você pode manter 'content' conforme necessário
+  room: room as string,
+  stranger: isStranger,
+  sender: isStranger ? 'stranger' : 'client',
+  distortion: isDistortionEnabled
+};
 
     // Emitir a mensagem para o servidor
     socket?.emit("sendMessage", newMessage);
