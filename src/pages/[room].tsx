@@ -69,7 +69,7 @@ const RoomPage: NextPage = () => {
 
   // Função para simular o efeito de pseudo-decodificação
   const decodeMessage = (messageId: string, finalMessage: string) => {
-    const maxIterations = 20; // Quantidade de iterações para completar a decodificação
+    const maxIterations = 100; // Quantidade de iterações para completar a decodificação
     let currentMessage = new Array(finalMessage.length).fill(" ").join(""); // Começa com espaços
     let iterations = 0;
     const randomChars =
