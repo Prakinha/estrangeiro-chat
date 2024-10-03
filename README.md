@@ -1,4 +1,3 @@
-
 <p align="center">
 <img src="./images/the_five.webp" width="178" align="center">
 <h1 align="center">Estrangeiro Chat</h1>

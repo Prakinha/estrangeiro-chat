@@ -1,173 +1,171 @@
 div.clientInput {
-    flex: 0 0 auto;
+  flex: 0 0 auto;
 
+  display: flex;
+  column-gap: 24px;
+  flex-direction: row;
+
+  color: var(--primary-color);
+
+  > * {
+    font-size: 32px;
+  }
+
+  input {
+    width: 100%;
+    border: 0;
+    background-color: transparent;
+
+    color: var(--primary-color);
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+div.connecting {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  > p {
+    color: var(--primary-color);
+
+    &::after {
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: bottom;
+      animation: ellipsis steps(4, end) 900ms infinite;
+      content: "\2026";
+      /* ascii code for the ellipsis character */
+      width: 0px;
+    }
+  }
+}
+
+@keyframes ellipsis {
+  to {
+    width: 10px;
+  }
+}
+
+div.strangerInput {
+  margin-top: 32px;
+
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+
+  hr {
+    border: 0;
+    height: 1px;
+    background-color: var(--primary-color);
+  }
+
+  input {
+    width: 100%;
+
+    text-align: center;
+    padding: 10px;
+
+    color: var(--primary-color);
+
+    background-color: var(--background-color);
+    border: #acc66e solid 1px;
+
+    &::placeholder {
+      color: var(--primary-color);
+    }
+
+    &:disabled {
+      box-shadow: none;
+    }
+  }
+}
+
+div.messages {
+  flex: 1 1 auto;
+
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+
+  overflow-y: auto; /* Habilitar o scroll vertical */
+  overflow-x: hidden; /* Remover o scroll horizontal */
+  max-height: 400px;
+  word-wrap: break-word; /* Quebrar o texto automaticamente */
+
+  /* Customizando a barra de rolagem vertical */
+  ::-webkit-scrollbar {
+    width: 8px; /* Largura da barra de rolagem */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent; /* Fundo transparente */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.5); /* Cor da barra de rolagem */
+    border-radius: 10px; /* Arredondar a borda da barra de rolagem */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0); /* Cor ao passar o mouse */
+  }
+
+  margin-bottom: 32px;
+
+  > div {
     display: flex;
     column-gap: 24px;
     flex-direction: row;
 
     color: var(--primary-color);
+    //color: var(#d11a1a);
 
-    >* {
-        font-size: 32px;
+    font-size: 32px;
+
+    &.stranger {
+      font-family: "Estrangeiro";
+      font-size: 42px;
+      margin-left: 32px;
+      word-spacing: 2rem;
     }
-
-    input {
-        width: 100%;
-        border: 0;
-        background-color: transparent;
-
-        color: var(--primary-color);
-
-        &:focus {
-            outline: none;
-        }
-    }
-}
-
-div.connecting {
-    height: 100%;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    >p {
-        color: var(--primary-color);
-
-        &::after {
-            overflow: hidden;
-            display: inline-block;
-            vertical-align: bottom;
-            animation: ellipsis steps(4, end) 900ms infinite;
-            content: "\2026";
-            /* ascii code for the ellipsis character */
-            width: 0px;
-        }
-    }
-}
-
-@keyframes ellipsis {
-    to {
-        width: 10px;
-    }
-}
-
-div.strangerInput {
-
-    margin-top: 32px;
-
-    display: flex;
-    flex-direction: column;
-    row-gap: 12px;
-
-    hr {
-        border: 0;
-        height: 1px;
-        background-color: var(--primary-color);
-    }
-
-    input {
-        width: 100%;
-
-        text-align: center;
-        padding: 10px;
-
-        color: var(--primary-color);
-
-        background-color: var(--background-color);
-        border: #ACC66E solid 1px;
-
-        &::placeholder {
-            color: var(--primary-color);
-        }
-
-        &:disabled {
-            box-shadow: none;
-        }
-    }
-}
-
-
-div.messages {
-    flex: 1 1 auto;
-
-    display: flex;
-    flex-direction: column;
-    row-gap: 24px;
-    
-overflow-y: auto;  /* Habilitar o scroll vertical */
-  overflow-x: hidden;  /* Remover o scroll horizontal */
-  max-height: 400px;
-  word-wrap: break-word;  /* Quebrar o texto automaticamente */
-
-  /* Customizando a barra de rolagem vertical */
-  ::-webkit-scrollbar {
-    width: 8px;  /* Largura da barra de rolagem */
   }
 
-  ::-webkit-scrollbar-track {
-    background: transparent;  /* Fundo transparente */
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.5);  /* Cor da barra de rolagem */
-    border-radius: 10px;  /* Arredondar a borda da barra de rolagem */
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0);  /* Cor ao passar o mouse */
-  }
-
-    margin-bottom: 32px;
-
-    >div {
-        display: flex;
-        column-gap: 24px;
-        flex-direction: row;
-
-        color: var(--primary-color);
-        //color: var(#d11a1a);
-
-        font-size: 32px;
-
-        &.stranger {
-            font-family: 'Estrangeiro';
-            font-size: 42px;
-            margin-left: 32px;
-            word-spacing: 2rem;
-        }
-    }
-
-    animation: program 6s linear infinite alternate;
+  animation: program 6s linear infinite alternate;
 }
 
 section.program {
-    height: 100%;
+  height: 100%;
 
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes program {
-    0% {
-        transform: skewX(0deg);
-    }
+  0% {
+    transform: skewX(0deg);
+  }
 
-    20% {
-        transform: skewX(0.3deg);
-    }
+  20% {
+    transform: skewX(0.3deg);
+  }
 
-    98% {
-        transform: skewX(0deg);
-    }
+  98% {
+    transform: skewX(0deg);
+  }
 
-    99% {
-        transform: skewX(1deg);
-    }
+  99% {
+    transform: skewX(1deg);
+  }
 
-    100% {
-        transform: skewX(0deg);
-    }
+  100% {
+    transform: skewX(0deg);
+  }
 }
 @keyframes distortion {
   0% {

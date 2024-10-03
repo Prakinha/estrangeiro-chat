@@ -4,16 +4,16 @@ import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import SocketIOClient from "socket.io-client";
 import { Socket } from "socket.io-client";
-import { v4 as uuidv4 } from 'uuid';  // Para criar IDs únicos
+import { v4 as uuidv4 } from "uuid"; // Para criar IDs únicos
 
 import styles from "../styles/Room.module.scss";
 import { Message } from "../types/message";
 
 interface CompartmentMessage extends Message {
-  id: string;          // Identificador único para cada mensagem
-  content: string;     // Conteúdo da mensagem
-  sender: string;      // Indica quem enviou (cliente ou estrangeiro)
-  distortion?: boolean;  // Novo campo para indicar se a mensagem tem distorção
+  id: string; // Identificador único para cada mensagem
+  content: string; // Conteúdo da mensagem
+  sender: string; // Indica quem enviou (cliente ou estrangeiro)
+  distortion?: boolean; // Novo campo para indicar se a mensagem tem distorção
 }
 
 const RoomPage: NextPage = () => {
@@ -27,7 +27,8 @@ const RoomPage: NextPage = () => {
   const [clientMessage, setClientMessage] = useState<string>("");
   const [strangerMessage, setStrangerMessage] = useState<string>("");
   const [isDecodingEnabled, setIsDecodingEnabled] = useState<boolean>(true); // Estado para ligar/desligar a decodificação
-  const [isDistortionEnabled, setIsDistortionEnabled] = useState<boolean>(false); // Estado para distorção
+  const [isDistortionEnabled, setIsDistortionEnabled] =
+    useState<boolean>(false); // Estado para distorção
 
   // Criar uma ref para o container das mensagens
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,7 +53,7 @@ const RoomPage: NextPage = () => {
       // Se a mensagem for do estrangeiro e a decodificação estiver ativada
       if (message.stranger && isDecodingEnabled) {
         setMessages((oldMessages) => [...oldMessages, message]);
-        decodeMessage(message.id, message.content);  // Passar o ID da mensagem para ser editada
+        decodeMessage(message.id, message.content); // Passar o ID da mensagem para ser editada
       } else {
         setMessages((oldMessages) => [...oldMessages, message]);
       }
@@ -68,10 +69,11 @@ const RoomPage: NextPage = () => {
 
   // Função para simular o efeito de pseudo-decodificação
   const decodeMessage = (messageId: string, finalMessage: string) => {
-    const maxIterations = 20;  // Quantidade de iterações para completar a decodificação
+    const maxIterations = 20; // Quantidade de iterações para completar a decodificação
     let currentMessage = new Array(finalMessage.length).fill(" ").join(""); // Começa com espaços
     let iterations = 0;
-    const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+    const randomChars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
 
     const intervalId = setInterval(() => {
       iterations++;
@@ -81,18 +83,26 @@ const RoomPage: NextPage = () => {
         if (currentMessage[i] !== finalMessage[i]) {
           if (iterations < maxIterations / 3) {
             // Primeira fase: caracteres completamente aleatórios
-            decoded += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
-          } else if (iterations < 2 * maxIterations / 3) {
+            decoded += randomChars.charAt(
+              Math.floor(Math.random() * randomChars.length)
+            );
+          } else if (iterations < (2 * maxIterations) / 3) {
             // Segunda fase: restringir para letras e números
-            decoded += Math.random() > 0.5
-              ? randomChars.charAt(Math.floor(Math.random() * 36))  // A-Z, a-z, 0-9
-              : finalMessage[i];  // Algumas letras corretas
+            decoded +=
+              Math.random() > 0.5
+                ? randomChars.charAt(Math.floor(Math.random() * 36)) // A-Z, a-z, 0-9
+                : finalMessage[i]; // Algumas letras corretas
           } else {
             // Terceira fase: afunilamento para a letra correta
-            decoded += Math.random() > 0.2 ? finalMessage[i] : randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+            decoded +=
+              Math.random() > 0.2
+                ? finalMessage[i]
+                : randomChars.charAt(
+                    Math.floor(Math.random() * randomChars.length)
+                  );
           }
         } else {
-          decoded += finalMessage[i];  // Letra já decodificada
+          decoded += finalMessage[i]; // Letra já decodificada
         }
       }
 
@@ -107,18 +117,19 @@ const RoomPage: NextPage = () => {
 
       // Verifica se todas as letras foram decodificadas
       if (decoded === finalMessage) {
-        clearInterval(intervalId);  // Parar o efeito quando a mensagem estiver completamente decodificada
+        clearInterval(intervalId); // Parar o efeito quando a mensagem estiver completamente decodificada
       }
-    }, 100);  // Tempo de intervalo entre as iterações
+    }, 100); // Tempo de intervalo entre as iterações
   };
 
   // Verificar se o usuário está no final do chat
   const checkIfUserIsAtBottom = () => {
     if (!messagesContainerRef.current) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
 
-    setIsUserAtBottom(scrollTop + clientHeight >= scrollHeight - 10);  // 10px de margem
+    setIsUserAtBottom(scrollTop + clientHeight >= scrollHeight - 10); // 10px de margem
   };
 
   // Efeito para rolar automaticamente para a última mensagem
@@ -130,11 +141,17 @@ const RoomPage: NextPage = () => {
 
   useEffect(() => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.addEventListener('scroll', checkIfUserIsAtBottom);
+      messagesContainerRef.current.addEventListener(
+        "scroll",
+        checkIfUserIsAtBottom
+      );
     }
     return () => {
       if (messagesContainerRef.current) {
-        messagesContainerRef.current.removeEventListener('scroll', checkIfUserIsAtBottom);
+        messagesContainerRef.current.removeEventListener(
+          "scroll",
+          checkIfUserIsAtBottom
+        );
       }
     };
   }, []);
@@ -143,16 +160,16 @@ const RoomPage: NextPage = () => {
   const sendMessage = async () => {
     if (isStranger ? !strangerMessage : !clientMessage) return;
 
-    const messageId = uuidv4();  // Criar um ID único para a mensagem
+    const messageId = uuidv4(); // Criar um ID único para a mensagem
     const newMessage: CompartmentMessage = {
-  id: messageId,
-  message: isStranger ? strangerMessage : clientMessage,  // Atribua o mesmo valor de content a message
-  content: isStranger ? strangerMessage : clientMessage,  // Você pode manter 'content' conforme necessário
-  room: room as string,
-  stranger: isStranger,
-  sender: isStranger ? 'stranger' : 'client',
-  distortion: isDistortionEnabled
-};
+      id: messageId,
+      message: isStranger ? strangerMessage : clientMessage, // Atribua o mesmo valor de content a message
+      content: isStranger ? strangerMessage : clientMessage, // Você pode manter 'content' conforme necessário
+      room: room as string,
+      stranger: isStranger,
+      sender: isStranger ? "stranger" : "client",
+      distortion: isDistortionEnabled,
+    };
 
     // Emitir a mensagem para o servidor
     socket?.emit("sendMessage", newMessage);
@@ -197,7 +214,9 @@ const RoomPage: NextPage = () => {
                 }}
                 onClick={() => setIsDecodingEnabled(!isDecodingEnabled)}
               >
-                {isDecodingEnabled ? "Desligar Decodificação" : "Ligar Decodificação"}
+                {isDecodingEnabled
+                  ? "Desligar Decodificação"
+                  : "Ligar Decodificação"}
               </button>
 
               <button
@@ -220,17 +239,19 @@ const RoomPage: NextPage = () => {
 
           <div
             className={styles.messages}
-            ref={messagesContainerRef}  // Referência para o container de mensagens
+            ref={messagesContainerRef} // Referência para o container de mensagens
             style={{
-              overflowY: "auto",  // Habilita o scroll vertical
-              overflowX: "hidden",  // Remove o scroll horizontal
-              maxHeight: "400px"  // Define a altura máxima do contêiner
+              overflowY: "auto", // Habilita o scroll vertical
+              overflowX: "hidden", // Remove o scroll horizontal
+              maxHeight: "400px", // Define a altura máxima do contêiner
             }}
           >
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`${message.stranger ? styles.stranger : styles.client} ${message.distortion ? styles.distortion : ''}`}
+                className={`${
+                  message.stranger ? styles.stranger : styles.client
+                } ${message.distortion ? styles.distortion : ""}`}
               >
                 <p className="text-glow">{!message.stranger && ">"}</p>
                 <p className="text-glow">{message.content}</p>
