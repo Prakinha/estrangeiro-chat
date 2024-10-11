@@ -4,4 +4,11 @@ const nextConfig = {
   swcMinify: true,
 };
 
-module.exports = nextConfig;
+//module.exports = nextConfig;
+module.exports = {
+  // Definindo host e porta
+  devServer: {
+    host: '192.168.x.x', // Aceita conexões de qualquer IP
+    port: 3000,      // Define a porta (pode ser 3000 ou outra de sua escolha)
+  }
+}

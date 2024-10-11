@@ -59,10 +59,10 @@ const Home: NextPage = () => {
         >
           Entrar como o &quot;estrangeiro&quot;
         </button>
-        <p className={styles.credits}>
+        {/* <p className={styles.credits}>
           Créditos e código fonte{" "}
           <a href="https://github.com/wetrustinprize/estrangeiro-chat">aqui</a>
-        </p>
+        </p> */}
       </section>
     </>
   );
