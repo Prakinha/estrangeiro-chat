@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import styles from "../styles/Home.module.scss";
 
-const Home: NextPage = () => {
+const preHome: NextPage = () => {
   const router = useRouter();
   const [room, setRoom] = useState<string>("");
 
@@ -68,4 +68,4 @@ const Home: NextPage = () => {
   );
 };
 
-export default Home;
+export default preHome;

@@ -4,21 +4,20 @@ import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import SocketIOClient from "socket.io-client";
 import { Socket } from "socket.io-client";
-import { v4 as uuidv4 } from "uuid"; // Para criar IDs únicos
+import { v4 as uuidv4 } from "uuid";
 
 import styles from "../styles/Room.module.scss";
 import { Message } from "../types/message";
 
 interface CompartmentMessage extends Message {
-  id: string; // Identificador único para cada mensagem
-  content: string; // Conteúdo da mensagem
-  sender: string; // Indica quem enviou (cliente ou estrangeiro)
-  distortion?: boolean; // Novo campo para indicar se a mensagem tem distorção
+  id: string;
+  content: string;
+  sender: string;
+  distortion?: boolean;
 }
 
 const RoomPage: NextPage = () => {
   const router = useRouter();
-
   const { room, stranger } = router.query;
   const isStranger = !!stranger;
 
@@ -26,21 +25,25 @@ const RoomPage: NextPage = () => {
   const [messages, setMessages] = useState<CompartmentMessage[]>([]);
   const [clientMessage, setClientMessage] = useState<string>("");
   const [strangerMessage, setStrangerMessage] = useState<string>("");
-  const [isDecodingEnabled, setIsDecodingEnabled] = useState<boolean>(true); // Estado para ligar/desligar a decodificação
-  const [isDistortionEnabled, setIsDistortionEnabled] =
-    useState<boolean>(false); // Estado para distorção
 
-  // Criar uma ref para o container das mensagens
+  // Estados para decodificação, distorção e volume
+  const [isDecodingEnabled, setIsDecodingEnabled] = useState<boolean>(true);
+  const [isDistortionEnabled, setIsDistortionEnabled] = useState<boolean>(false);
+  const [volume, setVolume] = useState<number>(1);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState<boolean>(true);
 
-  useEffect((): any => {
+  // Referência para o elemento de áudio
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
     if (!room || !router) return;
 
     const io = SocketIOClient(process.env.API_BASE_URL as string, {
       path: "/api/socketio",
-      extraHeaders: {
+      query: {
         room: room as string,
       },
     });
@@ -50,10 +53,9 @@ const RoomPage: NextPage = () => {
     });
 
     io.on("message", (message: CompartmentMessage) => {
-      // Se a mensagem for do estrangeiro e a decodificação estiver ativada
-      if (message.stranger && isDecodingEnabled) {
+      if (message.sender === "stranger" && isDecodingEnabled) {
         setMessages((oldMessages) => [...oldMessages, message]);
-        decodeMessage(message.id, message.content); // Passar o ID da mensagem para ser editada
+        decodeMessage(message.id, message.content);
       } else {
         setMessages((oldMessages) => [...oldMessages, message]);
       }
@@ -64,13 +66,43 @@ const RoomPage: NextPage = () => {
       setClientMessage(message);
     });
 
-    if (io) return () => io.disconnect();
-  }, [room, router, isStranger, isDecodingEnabled]);
+    // Listeners para eventos de controle
+    io.on("toggleDecoding", (enabled: boolean) => {
+      setIsDecodingEnabled(enabled);
+    });
+
+    io.on("toggleDistortion", (enabled: boolean) => {
+      setIsDistortionEnabled(enabled);
+    });
+
+    io.on("adjustVolume", (newVolume: number) => {
+      setVolume(newVolume);
+    });
+
+    setSocket(io);
+
+    return () => {
+      io.disconnect();
+    };
+  }, [room, router, isStranger]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  // Função para ajustar o volume
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    socket?.emit("adjustVolume", newVolume);
+  };
 
   // Função para simular o efeito de pseudo-decodificação
   const decodeMessage = (messageId: string, finalMessage: string) => {
-    const maxIterations = 100; // Quantidade de iterações para completar a decodificação
-    let currentMessage = new Array(finalMessage.length).fill(" ").join(""); // Começa com espaços
+    const maxIterations = 150;
+    let currentMessage = new Array(finalMessage.length).fill(" ").join("");
     let iterations = 0;
     const randomChars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
@@ -78,22 +110,18 @@ const RoomPage: NextPage = () => {
     const intervalId = setInterval(() => {
       iterations++;
       let decoded = "";
-
       for (let i = 0; i < finalMessage.length; i++) {
         if (currentMessage[i] !== finalMessage[i]) {
           if (iterations < maxIterations / 3) {
-            // Primeira fase: caracteres completamente aleatórios
             decoded += randomChars.charAt(
               Math.floor(Math.random() * randomChars.length)
             );
           } else if (iterations < (2 * maxIterations) / 3) {
-            // Segunda fase: restringir para letras e números
             decoded +=
-              Math.random() > 0.5
-                ? randomChars.charAt(Math.floor(Math.random() * 36)) // A-Z, a-z, 0-9
-                : finalMessage[i]; // Algumas letras corretas
+              Math.random() > 0.1
+                ? randomChars.charAt(Math.floor(Math.random() * 36))
+                : finalMessage[i];
           } else {
-            // Terceira fase: afunilamento para a letra correta
             decoded +=
               Math.random() > 0.2
                 ? finalMessage[i]
@@ -102,37 +130,33 @@ const RoomPage: NextPage = () => {
                   );
           }
         } else {
-          decoded += finalMessage[i]; // Letra já decodificada
+          decoded += finalMessage[i];
         }
       }
 
       currentMessage = decoded;
 
-      // Atualizar a mensagem no estado para decodificar progressivamente
       setMessages((oldMessages) =>
         oldMessages.map((msg) =>
           msg.id === messageId ? { ...msg, content: decoded } : msg
         )
       );
 
-      // Verifica se todas as letras foram decodificadas
       if (decoded === finalMessage) {
-        clearInterval(intervalId); // Parar o efeito quando a mensagem estiver completamente decodificada
+        clearInterval(intervalId);
       }
-    }, 100); // Tempo de intervalo entre as iterações
+    }, 150);
   };
 
-  // Verificar se o usuário está no final do chat
   const checkIfUserIsAtBottom = () => {
     if (!messagesContainerRef.current) return;
 
     const { scrollTop, scrollHeight, clientHeight } =
       messagesContainerRef.current;
 
-    setIsUserAtBottom(scrollTop + clientHeight >= scrollHeight - 10); // 10px de margem
+    setIsUserAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
   };
 
-  // Efeito para rolar automaticamente para a última mensagem
   useEffect(() => {
     if (isUserAtBottom && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "auto" });
@@ -156,25 +180,22 @@ const RoomPage: NextPage = () => {
     };
   }, []);
 
-  // Função para enviar a mensagem com ou sem distorção
   const sendMessage = async () => {
     if (isStranger ? !strangerMessage : !clientMessage) return;
 
-    const messageId = uuidv4(); // Criar um ID único para a mensagem
+    const messageId = uuidv4();
     const newMessage: CompartmentMessage = {
       id: messageId,
-      message: isStranger ? strangerMessage : clientMessage, // Atribua o mesmo valor de content a message
-      content: isStranger ? strangerMessage : clientMessage, // Você pode manter 'content' conforme necessário
+      message: isStranger ? strangerMessage : clientMessage,
+      content: isStranger ? strangerMessage : clientMessage,
       room: room as string,
       stranger: isStranger,
       sender: isStranger ? "stranger" : "client",
       distortion: isDistortionEnabled,
     };
 
-    // Emitir a mensagem para o servidor
     socket?.emit("sendMessage", newMessage);
 
-    // Limpar o campo de mensagem após o envio
     setUserMessage("");
   };
 
@@ -187,63 +208,127 @@ const RoomPage: NextPage = () => {
     }
   };
 
+  // Estado para o menu expansível
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+
   return (
     <>
       <Head>
         <title>Sala</title>
       </Head>
+
+      {/* Elemento de áudio invisível */}
+      <audio autoPlay loop ref={audioRef} style={{ display: "none" }}>
+        <source src="/audio/urnace.mp3" type="audio/mp3" />
+      </audio>
+
       {!socket ? (
         <div className={styles.connecting}>
           <p className="text-glow">Conectando</p>
         </div>
       ) : (
         <section className={styles.program}>
-          {/* Botão visível apenas para o estrangeiro para ligar/desligar a decodificação */}
           {isStranger && (
             <>
+              {/* Botão para abrir/fechar o menu */}
               <button
                 style={{
                   position: "fixed",
                   top: "10px",
                   right: "10px",
-                  background: isDecodingEnabled ? "green" : "red",
+                  background: "gray",
                   color: "white",
                   padding: "10px",
                   borderRadius: "5px",
                   cursor: "pointer",
+                  zIndex: 1000,
                 }}
-                onClick={() => setIsDecodingEnabled(!isDecodingEnabled)}
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
-                {isDecodingEnabled
-                  ? "Desligar Decodificação"
-                  : "Ligar Decodificação"}
+                {isMenuOpen ? "Fechar Menu" : "Abrir Menu"}
               </button>
 
-              <button
-                style={{
-                  position: "fixed",
-                  top: "60px", // Um pouco abaixo do botão de decodificação
-                  right: "10px",
-                  background: isDistortionEnabled ? "green" : "red",
-                  color: "white",
-                  padding: "10px",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-                onClick={() => setIsDistortionEnabled(!isDistortionEnabled)}
-              >
-                {isDistortionEnabled ? "Desligar Distorção" : "Ligar Distorção"}
-              </button>
+              {/* Menu Expansível */}
+              {isMenuOpen && (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: "60px",
+                    right: "10px",
+                    background: "rgba(0, 0, 0, 0.8)",
+                    padding: "15px",
+                    borderRadius: "5px",
+                    color: "white",
+                    zIndex: 1000,
+                    width: "200px",
+                  }}
+                >
+                  {/* Controle de Decodificação */}
+                  <button
+                    style={{
+                      background: isDecodingEnabled ? "green" : "red",
+                      color: "white",
+                      padding: "10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      marginBottom: "10px",
+                      width: "100%",
+                    }}
+                    onClick={() => {
+                      const newIsDecodingEnabled = !isDecodingEnabled;
+                      setIsDecodingEnabled(newIsDecodingEnabled);
+                      socket?.emit("toggleDecoding", newIsDecodingEnabled);
+                    }}
+                  >
+                    {isDecodingEnabled ? "Decodificação ON" : "Decodificação OFF"}
+                  </button>
+
+                  {/* Controle de Distorção */}
+                  <button
+                    style={{
+                      background: isDistortionEnabled ? "green" : "red",
+                      color: "white",
+                      padding: "10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      marginBottom: "10px",
+                      width: "100%",
+                    }}
+                    onClick={() => {
+                      const newIsDistortionEnabled = !isDistortionEnabled;
+                      setIsDistortionEnabled(newIsDistortionEnabled);
+                      socket?.emit("toggleDistortion", newIsDistortionEnabled);
+                    }}
+                  >
+                    {isDistortionEnabled ? "Distorção ON" : "Distorção OFF"}
+                  </button>
+
+                  {/* Slider de Volume */}
+                  <div style={{ marginBottom: "10px" }}>
+                    <label>Volume:</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={volume}
+                      onChange={handleVolumeChange}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
 
+          {/* Área de mensagens */}
           <div
             className={styles.messages}
-            ref={messagesContainerRef} // Referência para o container de mensagens
+            ref={messagesContainerRef}
             style={{
-              overflowY: "auto", // Habilita o scroll vertical
-              overflowX: "hidden", // Remove o scroll horizontal
-              maxHeight: "400px", // Define a altura máxima do contêiner
+              overflowY: "auto",
+              overflowX: "hidden",
+              maxHeight: "400px",
             }}
           >
             {messages.map((message) => (
@@ -251,7 +336,9 @@ const RoomPage: NextPage = () => {
                 key={message.id}
                 className={`${
                   message.stranger ? styles.stranger : styles.client
-                } ${message.distortion ? styles.distortion : ""}`}
+                } ${message.distortion ? styles.distortion : ""} ${
+                  message.stranger ? styles.textShift : ""
+                }`}
               >
                 <p className="text-glow">{!message.stranger && ">"}</p>
                 <p className="text-glow">{message.content}</p>
@@ -260,6 +347,8 @@ const RoomPage: NextPage = () => {
             {/* Elemento para forçar o scroll até o final */}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Input do cliente */}
           <div className={styles.clientInput}>
             <p className="text-glow">{">"}</p>
             <input
@@ -274,6 +363,8 @@ const RoomPage: NextPage = () => {
               className="text-glow"
             />
           </div>
+
+          {/* Input do estrangeiro */}
           {isStranger && (
             <div className={styles.strangerInput}>
               <hr className="glow" />
