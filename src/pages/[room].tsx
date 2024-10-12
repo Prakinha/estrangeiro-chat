@@ -27,7 +27,7 @@ const RoomPage: NextPage = () => {
   const [strangerMessage, setStrangerMessage] = useState<string>("");
 
   // Estados para decodificação, distorção e volume
-  const [isDecodingEnabled, setIsDecodingEnabled] = useState<boolean>(true);
+  const [isDecodingEnabled, setIsDecodingEnabled] = useState<boolean>(false);
   const [isDistortionEnabled, setIsDistortionEnabled] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(1);
 
@@ -35,56 +35,74 @@ const RoomPage: NextPage = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState<boolean>(true);
 
+
+  
   // Referência para o elemento de áudio
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  useEffect(() => {
-    if (!room || !router) return;
+  const decodingEnabledRef = useRef(isDecodingEnabled); // Inicializa a ref com o valor atual
+useEffect(() => {
+  decodingEnabledRef.current = isDecodingEnabled; // Atualiza a ref sempre que isDecodingEnabled mudar
+}, [isDecodingEnabled]);
 
-    const io = SocketIOClient(process.env.API_BASE_URL as string, {
-      path: "/api/socketio",
-      query: {
-        room: room as string,
-      },
-    });
+useEffect(() => {
+  if (!room || !router) return;
+  console.log("Conectando à room:", room);
 
-    io.on("connect", () => {
-      setSocket(io);
-    });
+  const io = SocketIOClient(process.env.API_BASE_URL as string, {
+    path: "/api/socketio",
+    query: {
+      room: room as string,
+    },
+  });
 
-    io.on("message", (message: CompartmentMessage) => {
-      if (message.sender === "stranger" && isDecodingEnabled) {
-        setMessages((oldMessages) => [...oldMessages, message]);
-        decodeMessage(message.id, message.content);
-      } else {
-        setMessages((oldMessages) => [...oldMessages, message]);
-      }
-    });
-
-    io.on("clientMessage", (message: string) => {
-      if (!isStranger) return;
-      setClientMessage(message);
-    });
-
-    // Listeners para eventos de controle
-    io.on("toggleDecoding", (enabled: boolean) => {
-      setIsDecodingEnabled(enabled);
-    });
-
-    io.on("toggleDistortion", (enabled: boolean) => {
-      setIsDistortionEnabled(enabled);
-    });
-
-    io.on("adjustVolume", (newVolume: number) => {
-      setVolume(newVolume);
-    });
-
+  io.on("connect", () => {
+    console.log("Conectado ao servidor socket.io com ID:", io.id);
     setSocket(io);
+  });
 
-    return () => {
-      io.disconnect();
-    };
-  }, [room, router, isStranger]);
+  io.on("connect_error", (err) => {
+    console.log("Erro de conexão:", err.message); // Verifica se há algum erro na conexão
+  });
+
+  io.emit("testConnection", "Mensagem de teste do cliente");
+
+  io.on("message", (message: CompartmentMessage) => {
+    if (message.sender === "stranger" && decodingEnabledRef.current) {
+      setMessages((oldMessages) => [...oldMessages, message]);
+      decodeMessage(message.id, message.content);
+    } else {
+      setMessages((oldMessages) => [...oldMessages, message]);
+    }
+  });
+
+  io.on("clientMessage", (message: string) => {
+    if (!isStranger) return;
+    console.log("Recebido clientMessage no cliente:", message);
+    setClientMessage(message);
+  });
+
+  // Listeners para eventos de controle
+  io.on("toggleDecoding", (enabled: boolean) => {
+    console.log("Evento toggleDecoding recebido no cliente:", enabled);
+    setIsDecodingEnabled(enabled);
+    setTimeout(() => {
+      console.log("Novo estado de isDecodingEnabled:", enabled);
+    }, 0);
+  });
+
+  io.on("toggleDistortion", (enabled: boolean) => {
+    setIsDistortionEnabled(enabled);
+  });
+
+  io.on("adjustVolume", (newVolume: number) => {
+    setVolume(newVolume);
+  });
+
+  return () => {
+    io.disconnect();
+  };
+}, [room, router, isStranger]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -145,7 +163,7 @@ const RoomPage: NextPage = () => {
       if (decoded === finalMessage) {
         clearInterval(intervalId);
       }
-    }, 150);
+    }, 50);
   };
 
   const checkIfUserIsAtBottom = () => {
@@ -219,7 +237,7 @@ const RoomPage: NextPage = () => {
 
       {/* Elemento de áudio invisível */}
       <audio autoPlay loop ref={audioRef} style={{ display: "none" }}>
-        <source src="/audio/urnace.mp3" type="audio/mp3" />
+        <source src="/audio/Furnace.mp3" type="audio/mp3" />
       </audio>
 
       {!socket ? (
@@ -275,9 +293,14 @@ const RoomPage: NextPage = () => {
                       width: "100%",
                     }}
                     onClick={() => {
-                      const newIsDecodingEnabled = !isDecodingEnabled;
-                      setIsDecodingEnabled(newIsDecodingEnabled);
-                      socket?.emit("toggleDecoding", newIsDecodingEnabled);
+                      const newIsDecodingEnabled = !isDecodingEnabled; //AQUI
+                      setIsDecodingEnabled(!isDecodingEnabled);
+                      socket?.emit("toggleDecoding", !isDecodingEnabled);
+                      //if (isDecodingEnabled) {
+                      //  setClientMessage("habilitado")
+                      // }else setClientMessage("fechouuu")
+                      
+                      
                     }}
                   >
                     {isDecodingEnabled ? "Decodificação ON" : "Decodificação OFF"}

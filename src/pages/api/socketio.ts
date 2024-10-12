@@ -20,7 +20,7 @@ const socketio = async (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
     io.on("connection", (socket) => {
       const { room } = socket.handshake.query;
-
+      console.log("Novo cliente conectado:", socket.id);
       console.log(`Client ${socket.id} connected to room \"${room}\"`);
       socket.join(room as string);
 
@@ -34,6 +34,7 @@ const socketio = async (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
       // Eventos de controle
       socket.on("toggleDecoding", (enabled: boolean) => {
+         console.log("Recebido toggleDecoding no servidor:", enabled); // Adicione este log
         io.to(room as string).emit("toggleDecoding", enabled);
       });
 
