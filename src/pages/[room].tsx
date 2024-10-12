@@ -117,10 +117,9 @@ useEffect(() => {
     socket?.emit("adjustVolume", newVolume);
   };
 
-  // Função para simular o efeito de pseudo-decodificação
-  const decodeMessage = (messageId: string, finalMessage: string) => {
+   const decodeMessage = (messageId: string, finalMessage: string) => {
     const maxIterations = 150;
-    let currentMessage = new Array(finalMessage.length).fill(" ").join("");
+    let currentMessage = " ".repeat(finalMessage.length);
     let iterations = 0;
     const randomChars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
@@ -128,6 +127,7 @@ useEffect(() => {
     const intervalId = setInterval(() => {
       iterations++;
       let decoded = "";
+
       for (let i = 0; i < finalMessage.length; i++) {
         if (currentMessage[i] !== finalMessage[i]) {
           if (iterations < maxIterations / 3) {
@@ -189,23 +189,22 @@ useEffect(() => {
       );
     }
     return () => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.removeEventListener(
-          "scroll",
-          checkIfUserIsAtBottom
-        );
-      }
+      messagesContainerRef.current?.removeEventListener(
+        "scroll",
+        checkIfUserIsAtBottom
+      );
     };
   }, []);
 
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (isStranger ? !strangerMessage : !clientMessage) return;
 
     const messageId = uuidv4();
+    const content = isStranger ? strangerMessage : clientMessage;
     const newMessage: CompartmentMessage = {
       id: messageId,
-      message: isStranger ? strangerMessage : clientMessage,
-      content: isStranger ? strangerMessage : clientMessage,
+      message: content,
+      content: content,
       room: room as string,
       stranger: isStranger,
       sender: isStranger ? "stranger" : "client",
@@ -213,7 +212,6 @@ useEffect(() => {
     };
 
     socket?.emit("sendMessage", newMessage);
-
     setUserMessage("");
   };
 
@@ -226,7 +224,6 @@ useEffect(() => {
     }
   };
 
-  // Estado para o menu expansível
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
   return (
@@ -235,7 +232,6 @@ useEffect(() => {
         <title>Sala</title>
       </Head>
 
-      {/* Elemento de áudio invisível */}
       <audio autoPlay loop ref={audioRef} style={{ display: "none" }}>
         <source src="/audio/Furnace.mp3" type="audio/mp3" />
       </audio>
@@ -248,7 +244,6 @@ useEffect(() => {
         <section className={styles.program}>
           {isStranger && (
             <>
-              {/* Botão para abrir/fechar o menu */}
               <button
                 style={{
                   position: "fixed",
@@ -266,7 +261,6 @@ useEffect(() => {
                 {isMenuOpen ? "Fechar Menu" : "Abrir Menu"}
               </button>
 
-              {/* Menu Expansível */}
               {isMenuOpen && (
                 <div
                   style={{
@@ -281,7 +275,6 @@ useEffect(() => {
                     width: "200px",
                   }}
                 >
-                  {/* Controle de Decodificação */}
                   <button
                     style={{
                       background: isDecodingEnabled ? "green" : "red",
@@ -293,20 +286,16 @@ useEffect(() => {
                       width: "100%",
                     }}
                     onClick={() => {
-                      const newIsDecodingEnabled = !isDecodingEnabled; //AQUI
-                      setIsDecodingEnabled(!isDecodingEnabled);
-                      socket?.emit("toggleDecoding", !isDecodingEnabled);
-                      //if (isDecodingEnabled) {
-                      //  setClientMessage("habilitado")
-                      // }else setClientMessage("fechouuu")
-                      
-                      
+                      const newIsDecodingEnabled = !isDecodingEnabled;
+                      setIsDecodingEnabled(newIsDecodingEnabled);
+                      socket?.emit("toggleDecoding", newIsDecodingEnabled);
                     }}
                   >
-                    {isDecodingEnabled ? "Decodificação ON" : "Decodificação OFF"}
+                    {isDecodingEnabled
+                      ? "Decodificação ON"
+                      : "Decodificação OFF"}
                   </button>
 
-                  {/* Controle de Distorção */}
                   <button
                     style={{
                       background: isDistortionEnabled ? "green" : "red",
@@ -320,13 +309,15 @@ useEffect(() => {
                     onClick={() => {
                       const newIsDistortionEnabled = !isDistortionEnabled;
                       setIsDistortionEnabled(newIsDistortionEnabled);
-                      socket?.emit("toggleDistortion", newIsDistortionEnabled);
+                      socket?.emit(
+                        "toggleDistortion",
+                        newIsDistortionEnabled
+                      );
                     }}
                   >
                     {isDistortionEnabled ? "Distorção ON" : "Distorção OFF"}
                   </button>
 
-                  {/* Slider de Volume */}
                   <div style={{ marginBottom: "10px" }}>
                     <label>Volume:</label>
                     <input
@@ -344,7 +335,6 @@ useEffect(() => {
             </>
           )}
 
-          {/* Área de mensagens */}
           <div
             className={styles.messages}
             ref={messagesContainerRef}
@@ -367,11 +357,9 @@ useEffect(() => {
                 <p className="text-glow">{message.content}</p>
               </div>
             ))}
-            {/* Elemento para forçar o scroll até o final */}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input do cliente */}
           <div className={styles.clientInput}>
             <p className="text-glow">{">"}</p>
             <input
@@ -382,12 +370,10 @@ useEffect(() => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") sendMessage();
               }}
-              onSubmit={sendMessage}
               className="text-glow"
             />
           </div>
 
-          {/* Input do estrangeiro */}
           {isStranger && (
             <div className={styles.strangerInput}>
               <hr className="glow" />
