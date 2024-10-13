@@ -8,6 +8,18 @@
   src: url("../../public/Clacon2.woff2");
 }
 
+
+@font-face {
+  font-family: "NovaFonte1";
+  src: url("/NovaFonte1.woff") format("woff");
+}
+
+@font-face {
+  font-family: "NovaFonte2";
+  src: url("/NovaFonte2.woff2") format("woff2");
+}
+
+
 html,
 body {
   padding: 0;

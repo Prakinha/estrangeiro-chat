@@ -45,6 +45,15 @@ const socketio = async (req: NextApiRequest, res: NextApiResponseServerIO) => {
       socket.on("adjustVolume", (volume: number) => {
         io.to(room as string).emit("adjustVolume", volume);
       });
+      socket.on("toggleSlowTyping", (enabled: boolean) => {
+        io.to(room as string).emit("toggleSlowTyping", enabled);
+      });
+
+
+      socket.on("updateFontStyle", (style) => {
+        io.to(room as string).emit("updateFontStyle", style);
+      });
+
 
       socket.on("disconnect", () => {
         socket.leave(room as string);

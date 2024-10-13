@@ -1,4 +1,4 @@
-div.clientInput {
+.clientInput {
   flex: 0 0 auto;
 
   display: flex;
@@ -24,8 +24,7 @@ div.clientInput {
   }
 }
 
-
-div.connecting {
+.connecting {
   height: 100%;
 
   display: flex;
@@ -53,7 +52,7 @@ div.connecting {
   }
 }
 
-div.strangerInput {
+.strangerInput {
   margin-top: 32px;
 
   display: flex;
@@ -77,6 +76,8 @@ div.strangerInput {
     background-color: var(--background-color);
     border: #acc66e solid 1px;
 
+    font-size: 32px; /* Tamanho fixo para o prompt do estrangeiro */
+
     &::placeholder {
       color: var(--primary-color);
     }
@@ -87,35 +88,17 @@ div.strangerInput {
   }
 }
 
-div.messages {
+.messages {
   flex: 1 1 auto;
 
   display: flex;
   flex-direction: column;
   row-gap: 24px;
 
-  overflow-y: auto; /* Habilitar o scroll vertical */
-  overflow-x: hidden; /* Remover o scroll horizontal */
+  overflow-y: auto;
+  overflow-x: hidden;
   max-height: 400px;
-  word-wrap: break-word; /* Quebrar o texto automaticamente */
-
-  /* Customizando a barra de rolagem vertical */
-  ::-webkit-scrollbar {
-    width: 8px; /* Largura da barra de rolagem */
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent; /* Fundo transparente */
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.5); /* Cor da barra de rolagem */
-    border-radius: 10px; /* Arredondar a borda da barra de rolagem */
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0); /* Cor ao passar o mouse */
-  }
+  word-wrap: break-word;
 
   margin-bottom: 32px;
 
@@ -125,8 +108,6 @@ div.messages {
     flex-direction: row;
 
     color: var(--primary-color);
-    //color: var(#d11a1a);
-
     font-size: 32px;
 
     &.stranger {
@@ -140,7 +121,7 @@ div.messages {
   animation: program 6s linear infinite alternate;
 }
 
-section.program {
+.program {
   height: 100%;
 
   display: flex;
@@ -168,6 +149,7 @@ section.program {
     transform: skewX(0deg);
   }
 }
+
 @keyframes distortion {
   0% {
     transform: none;
@@ -182,11 +164,9 @@ section.program {
   }
   30% {
     transform: skewX(0deg) translateY(-1px);
-    color: #0000ff;
   }
   40% {
     transform: skewX(-3deg) translateX(1px);
-    color: #ff00ff;
   }
   50% {
     transform: none;
@@ -201,7 +181,6 @@ section.program {
   }
   80% {
     transform: skewX(3deg) translateY(2px);
-    color: #00ffff;
   }
   90% {
     transform: skewX(-5deg) translateX(-2px);
@@ -214,8 +193,6 @@ section.program {
 .distortion {
   animation: distortion 0.5s infinite;
 }
-
-
 
 @keyframes textShift {
   0% {

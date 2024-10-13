@@ -14,6 +14,11 @@ interface CompartmentMessage extends Message {
   content: string;
   sender: string;
   distortion?: boolean;
+  fontStyle?: {
+    fontFamily: string;
+    color: string;
+    fontSize: string;
+  };
 }
 
 const RoomPage: NextPage = () => {
@@ -26,83 +31,138 @@ const RoomPage: NextPage = () => {
   const [clientMessage, setClientMessage] = useState<string>("");
   const [strangerMessage, setStrangerMessage] = useState<string>("");
 
-  // Estados para decodificação, distorção e volume
   const [isDecodingEnabled, setIsDecodingEnabled] = useState<boolean>(false);
   const [isDistortionEnabled, setIsDistortionEnabled] = useState<boolean>(false);
+  const [isSlowTypingEnabled, setIsSlowTypingEnabled] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(1);
+
+  // Estados para preferências de estilo do estrangeiro
+  const defaultFontFamily = "Estrangeiro";
+  const defaultFontColor = "var(--primary-color)"; // Verde meio catarrento
+  const defaultFontSize = "42px"; // Tamanho padrão maior
+
+  const [fontFamily, setFontFamily] = useState<string>(defaultFontFamily);
+  const [fontColor, setFontColor] = useState<string>(defaultFontColor);
+  const [fontSize, setFontSize] = useState<string>(defaultFontSize);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState<boolean>(true);
 
-
-  
-  // Referência para o elemento de áudio
   const audioRef = useRef<HTMLAudioElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const strangerInputRef = useRef<HTMLInputElement>(null);
 
-  const decodingEnabledRef = useRef(isDecodingEnabled); // Inicializa a ref com o valor atual
-useEffect(() => {
-  decodingEnabledRef.current = isDecodingEnabled; // Atualiza a ref sempre que isDecodingEnabled mudar
-}, [isDecodingEnabled]);
+  const decodingEnabledRef = useRef(isDecodingEnabled);
+  useEffect(() => {
+    decodingEnabledRef.current = isDecodingEnabled;
+  }, [isDecodingEnabled]);
 
-useEffect(() => {
-  if (!room || !router) return;
-  console.log("Conectando à room:", room);
+  const distortionEnabledRef = useRef(isDistortionEnabled);
+  useEffect(() => {
+    distortionEnabledRef.current = isDistortionEnabled;
+  }, [isDistortionEnabled]);
 
-  const io = SocketIOClient(process.env.API_BASE_URL as string, {
-    path: "/api/socketio",
-    query: {
-      room: room as string,
-    },
-  });
+  const slowTypingEnabledRef = useRef(isSlowTypingEnabled);
+  useEffect(() => {
+    slowTypingEnabledRef.current = isSlowTypingEnabled;
+  }, [isSlowTypingEnabled]);
 
-  io.on("connect", () => {
-    console.log("Conectado ao servidor socket.io com ID:", io.id);
-    setSocket(io);
-  });
+  // Referências para estilo do estrangeiro
+  const fontFamilyRef = useRef(fontFamily);
+  useEffect(() => {
+    fontFamilyRef.current = fontFamily;
+  }, [fontFamily]);
 
-  io.on("connect_error", (err) => {
-    console.log("Erro de conexão:", err.message); // Verifica se há algum erro na conexão
-  });
+  const fontColorRef = useRef(fontColor);
+  useEffect(() => {
+    fontColorRef.current = fontColor;
+  }, [fontColor]);
 
-  io.emit("testConnection", "Mensagem de teste do cliente");
+  const fontSizeRef = useRef(fontSize);
+  useEffect(() => {
+    fontSizeRef.current = fontSize;
+  }, [fontSize]);
 
-  io.on("message", (message: CompartmentMessage) => {
-    if (message.sender === "stranger" && decodingEnabledRef.current) {
-      setMessages((oldMessages) => [...oldMessages, message]);
-      decodeMessage(message.id, message.content);
-    } else {
-      setMessages((oldMessages) => [...oldMessages, message]);
-    }
-  });
+  useEffect(() => {
+    if (!room || !router) return;
 
-  io.on("clientMessage", (message: string) => {
-    if (!isStranger) return;
-    console.log("Recebido clientMessage no cliente:", message);
-    setClientMessage(message);
-  });
+    const io = SocketIOClient(process.env.API_BASE_URL as string, {
+      path: "/api/socketio",
+      query: {
+        room: room as string,
+      },
+    });
 
-  // Listeners para eventos de controle
-  io.on("toggleDecoding", (enabled: boolean) => {
-    console.log("Evento toggleDecoding recebido no cliente:", enabled);
-    setIsDecodingEnabled(enabled);
-    setTimeout(() => {
-      console.log("Novo estado de isDecodingEnabled:", enabled);
-    }, 0);
-  });
+    io.on("connect", () => {
+      setSocket(io);
+    });
 
-  io.on("toggleDistortion", (enabled: boolean) => {
-    setIsDistortionEnabled(enabled);
-  });
+    io.on("connect_error", (err) => {
+      console.error("Connection error:", err);
+    });
 
-  io.on("adjustVolume", (newVolume: number) => {
-    setVolume(newVolume);
-  });
+    io.emit("testConnection", "Mensagem de teste do cliente");
 
-  return () => {
-    io.disconnect();
-  };
-}, [room, router, isStranger]);
+    io.on("message", (message: CompartmentMessage) => {
+      if (message.sender === "stranger") {
+        if (slowTypingEnabledRef.current) {
+          // Adiciona a mensagem com conteúdo vazio
+          setMessages((oldMessages) => [
+            ...oldMessages,
+            { ...message, content: "", fontStyle: message.fontStyle },
+          ]);
+          typeMessage(message.id, message.content);
+        } else if (decodingEnabledRef.current) {
+          // Adiciona a mensagem com conteúdo vazio
+          setMessages((oldMessages) => [
+            ...oldMessages,
+            { ...message, content: "", fontStyle: message.fontStyle },
+          ]);
+          decodeMessage(message.id, message.content);
+        } else {
+          setMessages((oldMessages) => [...oldMessages, message]);
+        }
+      } else {
+        setMessages((oldMessages) => [...oldMessages, message]);
+      }
+    });
+
+    io.on("clientMessage", (message: string) => {
+      if (!isStranger) return;
+      setClientMessage(message);
+    });
+
+    io.on("toggleDecoding", (enabled: boolean) => {
+      setIsDecodingEnabled(enabled);
+    });
+
+    io.on("toggleDistortion", (enabled: boolean) => {
+      setIsDistortionEnabled(enabled);
+    });
+
+    io.on("toggleSlowTyping", (enabled: boolean) => {
+      setIsSlowTypingEnabled(enabled);
+    });
+
+    // Listeners para atualizar as preferências de estilo
+    io.on(
+      "updateFontStyle",
+      (style: { fontFamily: string; color: string; fontSize: string }) => {
+        setFontFamily(style.fontFamily);
+        setFontColor(style.color);
+        setFontSize(style.fontSize);
+      }
+    );
+
+    io.on("adjustVolume", (newVolume: number) => {
+      setVolume(newVolume);
+    });
+
+    return () => {
+      io.disconnect();
+    };
+  }, [room, router, isStranger]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -110,14 +170,13 @@ useEffect(() => {
     }
   }, [volume]);
 
-  // Função para ajustar o volume
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
     socket?.emit("adjustVolume", newVolume);
   };
 
-   const decodeMessage = (messageId: string, finalMessage: string) => {
+  const decodeMessage = (messageId: string, finalMessage: string) => {
     const maxIterations = 150;
     let currentMessage = " ".repeat(finalMessage.length);
     let iterations = 0;
@@ -166,6 +225,40 @@ useEffect(() => {
     }, 50);
   };
 
+  const typeMessage = (messageId: string, finalMessage: string) => {
+    let currentText = "";
+    let index = 0;
+    let cursorVisible = true;
+
+    const typingInterval = setInterval(() => {
+      if (index < finalMessage.length) {
+        currentText += finalMessage[index];
+        index++;
+      } else {
+        clearInterval(typingInterval);
+        // Remove o cursor quando a digitação termina
+        setMessages((oldMessages) =>
+          oldMessages.map((msg) =>
+            msg.id === messageId
+              ? { ...msg, content: currentText, cursorVisible: false }
+              : msg
+          )
+        );
+        return;
+      }
+
+      // Alterna a visibilidade do cursor
+      cursorVisible = !cursorVisible;
+      const displayText = currentText + (cursorVisible ? "_" : " ");
+
+      setMessages((oldMessages) =>
+        oldMessages.map((msg) =>
+          msg.id === messageId ? { ...msg, content: displayText } : msg
+        )
+      );
+    }, 50); // Ajuste a velocidade de digitação conforme desejado
+  };
+
   const checkIfUserIsAtBottom = () => {
     if (!messagesContainerRef.current) return;
 
@@ -209,6 +302,13 @@ useEffect(() => {
       stranger: isStranger,
       sender: isStranger ? "stranger" : "client",
       distortion: isDistortionEnabled,
+      fontStyle: isStranger
+        ? {
+            fontFamily: fontFamilyRef.current,
+            color: fontColorRef.current,
+            fontSize: fontSizeRef.current,
+          }
+        : undefined,
     };
 
     socket?.emit("sendMessage", newMessage);
@@ -217,7 +317,7 @@ useEffect(() => {
 
   const setUserMessage = (newMessage: string) => {
     if (isStranger) {
-      setStrangerMessage("");
+      setStrangerMessage(newMessage);
     } else {
       socket?.emit("clientMessage", newMessage);
       setClientMessage(newMessage);
@@ -225,6 +325,67 @@ useEffect(() => {
   };
 
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+
+  // Auto-focar o input quando o componente é montado
+  useEffect(() => {
+    if (isStranger && strangerInputRef.current) {
+      strangerInputRef.current.focus();
+    } else if (!isStranger && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isStranger]);
+
+  // Manter o foco no input mesmo após perder o foco
+  const handleInputBlur = () => {
+    if (isStranger && strangerInputRef.current) {
+      strangerInputRef.current.focus();
+    } else if (!isStranger && inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  // Funções para atualizar as preferências de estilo e emitir eventos
+  const updateFontFamily = (newFont: string) => {
+    setFontFamily(newFont);
+    socket?.emit("updateFontStyle", {
+      fontFamily: newFont,
+      color: fontColor,
+      fontSize: fontSize,
+    });
+  };
+
+  const updateFontColor = (newColor: string) => {
+    setFontColor(newColor);
+    socket?.emit("updateFontStyle", {
+      fontFamily: fontFamily,
+      color: newColor,
+      fontSize: fontSize,
+    });
+  };
+
+  const updateFontSize = (newSize: string) => {
+    setFontSize(newSize);
+    socket?.emit("updateFontStyle", {
+      fontFamily: fontFamily,
+      color: fontColor,
+      fontSize: newSize,
+    });
+  };
+
+  // Função para resetar as preferências de estilo
+  const resetFontStyle = () => {
+    setFontFamily(defaultFontFamily);
+    setFontColor(defaultFontColor);
+    setFontSize(defaultFontSize);
+    socket?.emit("updateFontStyle", {
+      fontFamily: defaultFontFamily,
+      color: defaultFontColor,
+      fontSize: defaultFontSize,
+    });
+  };
+
+  // Opções de fontes disponíveis (adicionando mais fontes do pacote)
+  const availableFonts = ["Estrangeiro", "Clacon", "NovaFonte1", "NovaFonte2"]; // Substitua por fontes reais disponíveis
 
   return (
     <>
@@ -272,7 +433,7 @@ useEffect(() => {
                     borderRadius: "5px",
                     color: "white",
                     zIndex: 1000,
-                    width: "200px",
+                    width: "250px",
                   }}
                 >
                   <button
@@ -318,6 +479,30 @@ useEffect(() => {
                     {isDistortionEnabled ? "Distorção ON" : "Distorção OFF"}
                   </button>
 
+                  <button
+                    style={{
+                      background: isSlowTypingEnabled ? "green" : "red",
+                      color: "white",
+                      padding: "10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      marginBottom: "10px",
+                      width: "100%",
+                    }}
+                    onClick={() => {
+                      const newIsSlowTypingEnabled = !isSlowTypingEnabled;
+                      setIsSlowTypingEnabled(newIsSlowTypingEnabled);
+                      socket?.emit(
+                        "toggleSlowTyping",
+                        newIsSlowTypingEnabled
+                      );
+                    }}
+                  >
+                    {isSlowTypingEnabled
+                      ? "Digitação Lenta ON"
+                      : "Digitação Lenta OFF"}
+                  </button>
+
                   <div style={{ marginBottom: "10px" }}>
                     <label>Volume:</label>
                     <input
@@ -330,6 +515,61 @@ useEffect(() => {
                       style={{ width: "100%" }}
                     />
                   </div>
+
+                  {/* Preferências de Estilo */}
+                  <div style={{ marginBottom: "10px" }}>
+                    <label>Fonte:</label>
+                    <select
+                      value={fontFamily}
+                      onChange={(e) => updateFontFamily(e.target.value)}
+                      style={{ width: "100%" }}
+                    >
+                      {availableFonts.map((font) => (
+                        <option key={font} value={font}>
+                          {font}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: "10px" }}>
+                    <label>Cor do Texto:</label>
+                    <input
+                      type="color"
+                      value={fontColor}
+                      onChange={(e) => updateFontColor(e.target.value)}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: "10px" }}>
+                    <label>Tamanho da Fonte:</label>
+                    <input
+                      type="number"
+                      min="10"
+                      max="100"
+                      value={parseInt(fontSize)}
+                      onChange={(e) =>
+                        updateFontSize(`${e.target.value}px`)
+                      }
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+
+                  <button
+                    style={{
+                      background: "gray",
+                      color: "white",
+                      padding: "10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      marginTop: "10px",
+                      width: "100%",
+                    }}
+                    onClick={resetFontStyle}
+                  >
+                    Resetar para Padrão
+                  </button>
                 </div>
               )}
             </>
@@ -352,6 +592,20 @@ useEffect(() => {
                 } ${message.distortion ? styles.distortion : ""} ${
                   message.stranger ? styles.textShift : ""
                 }`}
+                style={
+                  message.stranger && message.fontStyle
+                    ? {
+                        fontFamily: message.fontStyle.fontFamily,
+                        color: message.fontStyle.color,
+                        fontSize: message.fontStyle.fontSize,
+                        wordSpacing: "2rem",
+                      }
+                    : {
+                        fontFamily: "Clacon",
+                        color: "var(--primary-color)",
+                        fontSize: "32px",
+                      }
+                }
               >
                 <p className="text-glow">{!message.stranger && ">"}</p>
                 <p className="text-glow">{message.content}</p>
@@ -360,30 +614,46 @@ useEffect(() => {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className={styles.clientInput}>
-            <p className="text-glow">{">"}</p>
-            <input
-              type="text"
-              value={clientMessage}
-              disabled={isStranger}
-              onChange={(e) => setUserMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") sendMessage();
-              }}
-              className="text-glow"
-            />
-          </div>
-
-          {isStranger && (
+          {!isStranger ? (
+            <div className={styles.clientInput}>
+              <p className="text-glow">{">"}</p>
+              <input
+                type="text"
+                value={clientMessage}
+                disabled={isStranger}
+                onChange={(e) => setUserMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") sendMessage();
+                }}
+                className="text-glow"
+                autoFocus={!isStranger}
+                ref={inputRef}
+                onBlur={handleInputBlur}
+                style={{
+                  fontFamily: "Clacon",
+                  fontSize: "32px",
+                  color: "var(--primary-color)",
+                }}
+              />
+            </div>
+          ) : (
             <div className={styles.strangerInput}>
               <hr className="glow" />
               <input
                 className="glow"
                 type="text"
                 value={strangerMessage}
-                onChange={(e) => setStrangerMessage(e.target.value)}
+                onChange={(e) => setUserMessage(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") sendMessage();
+                }}
+                autoFocus={isStranger}
+                ref={strangerInputRef}
+                onBlur={handleInputBlur}
+                style={{
+                  fontFamily: "Clacon",
+                  fontSize: "32px",
+                  color: "var(--primary-color)",
                 }}
               />
             </div>
