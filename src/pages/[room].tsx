@@ -618,7 +618,8 @@ const RoomPage: NextPage = () => {
             <div className={styles.clientInput}>
               <p className="text-glow">{">"}</p>
               <input
-                type="text"
+                  type="text"
+                  spellCheck="false"
                 value={clientMessage}
                 disabled={isStranger}
                 onChange={(e) => setUserMessage(e.target.value)}
@@ -641,7 +642,8 @@ const RoomPage: NextPage = () => {
               <hr className="glow" />
               <input
                 className="glow"
-                type="text"
+                    type="text"
+                    spellCheck="false"
                 value={strangerMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
                 onKeyDown={(e) => {
